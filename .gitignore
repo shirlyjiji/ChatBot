@@ -1,0 +1,66 @@
+# ---------------------------------
+# Dependency Directories
+# ---------------------------------
+/node_modules
+/.pnp
+.pnp.js
+
+# ---------------------------------
+# Build and Distribution Folders
+# ---------------------------------
+# Production build output
+/build
+/dist
+
+# Vite specific build output (if applicable)
+/build
+
+# ---------------------------------
+# Local Environment and Caching
+# ---------------------------------
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# IDE/Editor specific files (e.g., VS Code)
+.vscode/
+
+# macOS specific files
+.DS_Store
+
+# Editor settings that should be local, not tracked
+*.swp
+*~
+
+# ---------------------------------
+# Environment Variables and Secrets
+# ---------------------------------
+# Sensitive files that should NEVER be committed
+# .env
+# .env.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
+
+# ---------------------------------
+# Testing and Coverage
+# ---------------------------------
+/coverage
+
+# ---------------------------------
+# TypeScript (if applicable)
+# ---------------------------------
+# Compiled JS output
+/lib
+/dist
+
+# TypeScript definition files
+*.tsbuildinfo
+
+# ---------------------------------
+# Other Generated Files
+# ---------------------------------
+# Storybook build output
+/storybook-static
