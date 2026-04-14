@@ -16,7 +16,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI).then(async () => {
+mongoose.connect(process.env.MONGO_URI, { family: 4, serverSelectionTimeoutMS: 5000 }).then(async () => {
   console.log(`Connected to database: ${mongoose.connection.name} on ${mongoose.connection.host}`);
   const Flow = require('./models/Flow');
   const Company = require('./models/Company');

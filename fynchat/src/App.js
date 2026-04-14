@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import ChatWidget from './ChatWidget';
 
-const DEMO_API_KEY = 'fc_4bea250685f9f5090ad344fe9cbdf2c1';
+const DEMO_API_KEY = 'fc_e63dc534a86b0c301071f519b6e6441e';
 
 function DemoPage() {
   useEffect(() => {

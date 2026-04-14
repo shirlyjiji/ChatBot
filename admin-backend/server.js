@@ -75,7 +75,7 @@ app.get('/api/stats/super', (req, res) => res.redirect(301, '/api/super/stats'))
 app.get('/api/stats/company/:id', (req, res) => res.redirect(301, `/api/companies/${req.params.id}/stats`));
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, { family: 4, serverSelectionTimeoutMS: 5000 })
     .then(() => console.log('✅ Connected to MongoDB'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 

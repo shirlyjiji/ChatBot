@@ -10,7 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldCheck,
-  CalendarDays
+  CalendarDays,
+  Bot
 } from 'lucide-react';
 
 const Layout = ({ onLogout, user }) => {
@@ -64,7 +65,10 @@ const Layout = ({ onLogout, user }) => {
             <Users size={20} />
             {!isCollapsed && <span>Agents</span>}
           </NavLink>
-
+          <NavLink to="/builder" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
+            <Bot size={20} />
+            {!isCollapsed && <span>Bot Builder</span>}
+          </NavLink>
 
           <NavLink to="/history" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>
             <History size={20} />

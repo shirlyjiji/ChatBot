@@ -15,8 +15,8 @@ router.post('/create', auth(['admin']), async (req, res) => {
 
         const currentAgentCount = await Agent.countDocuments({ companyId });
         if (currentAgentCount >= company.allowedAgents) {
-            return res.status(400).json({ 
-                message: `Limit reached. This company is only allowed ${company.allowedAgents} agents.` 
+            return res.status(400).json({
+                message: `Limit reached. This company is only allowed ${company.allowedAgents} agents.`
             });
         }
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -24,14 +24,14 @@ router.post('/create', auth(['admin']), async (req, res) => {
             companyId,
             name,
             username,
-            password:hashedPassword,
+            password: hashedPassword,
             email,
             contact,
             status
         });
         if (req.user.companyId !== companyId) {
             return res.status(403).json({ message: 'Unauthorized company access' });
-          }
+        }
         await newAgent.save();
         res.status(201).json(newAgent);
     } catch (err) {
@@ -45,10 +45,11 @@ router.put('/:id', auth(['admin']), async (req, res) => {
     try {
         // Build update object
         const updateData = { name, username, email, contact, status };
-        
+
         // Only update password if a new one is provided
         if (password && password.trim() !== "") {
-            updateData.password = password;
+            const hashedPassword = await bcrypt.hash(password, 10);
+            updateData.password = hashedPassword;
         }
 
         const updatedAgent = await Agent.findByIdAndUpdate(
@@ -58,7 +59,7 @@ router.put('/:id', auth(['admin']), async (req, res) => {
         );
 
         if (!updatedAgent) return res.status(404).json({ message: "Agent not found" });
-        
+
         res.json(updatedAgent);
     } catch (err) {
         res.status(500).json({ message: "Error updating agent", error: err.message });
