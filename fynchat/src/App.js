@@ -2,10 +2,13 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import ChatWidget from './ChatWidget';
+import { Menu, X } from 'lucide-react';
 
 const DEMO_API_KEY = 'fc_e63dc534a86b0c301071f519b6e6441e';
 
 function DemoPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   useEffect(() => {
     // Clear any stale apiKey so this page always stays as demo
     localStorage.removeItem('fynchat_api_key');
@@ -22,16 +25,25 @@ function DemoPage() {
 
   return (
     <div className="landing-page">
-      <nav className="landing-navbar">
+      <nav className={`landing-navbar ${isMenuOpen ? 'mobile-menu-active' : ''}`}>
         <div className="landing-logo">
+          <div className="landing-logo-dot"></div>
           FynChat
         </div>
-        <div className="landing-nav-links">
-          <a href="/#">Solutions</a>
-          <a href="/#">Pricing</a>
-          <a href="/#">Contact</a>
+
+        <div className={`landing-nav-links ${isMenuOpen ? 'active' : ''}`}>
+          <a href="/#" onClick={() => setIsMenuOpen(false)}>Solutions</a>
+          <a href="/#" onClick={() => setIsMenuOpen(false)}>Pricing</a>
+          <a href="/#" onClick={() => setIsMenuOpen(false)}>Contact</a>
+          <button className="landing-cta mobile-only">Get Started</button>
         </div>
-        <button className="landing-cta" style={{ marginLeft: '20px' }}>Get Started</button>
+
+        <div className="landing-nav-actions">
+          <button className="landing-cta desktop-only">Get Started</button>
+          <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
       </nav>
 
       <section className="landing-hero">

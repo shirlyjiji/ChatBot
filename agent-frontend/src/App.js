@@ -48,6 +48,8 @@ export default function App() {
   const [callDuration, setCallDuration] = useState(0);
   const [callConversationId, setCallConversationId] = useState(null);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
 
   useEffect(() => {
     const interceptor = api.interceptors.response.use(
@@ -318,6 +320,7 @@ export default function App() {
     setActive(chat);
     setMessages(chat.messages || []);
     setViewingHistory(true);
+    setIsSidebarOpen(false); // Close sidebar on mobile
   };
 
   // ---------------- ACCEPT CHAT ----------------
@@ -332,6 +335,7 @@ export default function App() {
     localStorage.setItem('agent_active_conversation', res.data._id);
     socketRef.current.emit('joinConversation', res.data._id);
     setShowAccept(null);
+    setIsSidebarOpen(false); // Close sidebar on mobile
   };
 
   // ---------------- REJECT CHAT ----------------
@@ -442,6 +446,28 @@ export default function App() {
   // ================= DASHBOARD =================
   return (
     <div className="dashboard">
+      {/* Mobile Nav */}
+      <div className="mobile-nav">
+        <button className="mobile-nav-btn" onClick={() => setIsSidebarOpen(true)}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <span style={{ fontWeight: 800 }}>FynChat Agent</span>
+        <button className="mobile-nav-btn" onClick={logout}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+
+      {/* Sidebar Overlay */}
+      <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} />
+
       {/* Remote audio for WebRTC */}
       <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
 
@@ -475,7 +501,7 @@ export default function App() {
       )}
 
       {/* SIDEBAR */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isSidebarOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 1 1-7.6-11.7 8.38 8.38 0 0 1 3.8.9L22 4l-2.1 4.7a8.38 8.38 0 0 1 .9 3.8z"></path>

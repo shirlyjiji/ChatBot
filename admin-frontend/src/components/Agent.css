@@ -249,3 +249,38 @@
   background: #e2e8f0;
   color: #0f172a;
 }
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 768px) {
+  .agents-view {
+    padding: 20px;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .card {
+    border-radius: 12px;
+    overflow-x: auto;
+    /* Enable horizontal scroll for table on mobile */
+  }
+
+  .agents-table {
+    min-width: 600px;
+    /* Ensure table doesn't get too squished */
+  }
+
+  .modal {
+    width: 90%;
+    padding: 24px;
+  }
+}
