@@ -8,7 +8,9 @@
     Array.from(document.getElementsByTagName('script')).find(s => s.hasAttribute('data-api-key'));
 
   const API_KEY = config.apiKey || (script ? script.getAttribute('data-api-key') : null);
-  const WIDGET_URL = 'http://localhost:3000';
+  const loaderScript = document.currentScript ||
+    Array.from(document.getElementsByTagName('script')).find(s => s.src.includes('widget-loader.js'));
+  const WIDGET_URL = loaderScript ? new URL(loaderScript.src).origin : 'http://localhost:3000';
 
   if (API_KEY) {
     localStorage.setItem('fynchat_api_key', API_KEY);

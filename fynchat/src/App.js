@@ -16,7 +16,7 @@ function DemoPage() {
     // Inject widget-loader script (React ignores <script> tags in JSX)
     if (document.querySelector('script[data-fynchat]')) return;
     const script = document.createElement('script');
-    script.src = 'http://localhost:3000/widget-loader.js';
+    script.src = `${window.location.origin}/widget-loader.js`;
     script.setAttribute('data-api-key', DEMO_API_KEY);
     script.setAttribute('data-fynchat', 'true');
     script.async = true;

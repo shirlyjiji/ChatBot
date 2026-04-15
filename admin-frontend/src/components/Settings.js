@@ -8,7 +8,7 @@ const Settings = ({ user }) => {
   const [copied, setCopied] = useState(false);
   const [copiedScript, setCopiedScript] = useState(false);
 
-  const WIDGET_URL = "http://localhost:3000/widget-loader.js";
+  const WIDGET_URL = `${window.location.origin}/widget-loader.js`;
 
   useEffect(() => {
     fetchApiKey();

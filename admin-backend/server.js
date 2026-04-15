@@ -75,8 +75,19 @@ app.get('/api/stats/super', (req, res) => res.redirect(301, '/api/super/stats'))
 app.get('/api/stats/company/:id', (req, res) => res.redirect(301, `/api/companies/${req.params.id}/stats`));
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI, { family: 4, serverSelectionTimeoutMS: 5000 })
-    .then(() => console.log('✅ Connected to MongoDB'))
+const MONGO_OPTIONS = {
+    family: 4,
+    serverSelectionTimeoutMS: 30000,
+    heartbeatFrequencyMS: 10000,
+    socketTimeoutMS: 45000,
+};
+
+mongoose.connection.on('connected', () => console.log('✅ Mongoose connected to DB'));
+mongoose.connection.on('error', (err) => console.error('❌ Mongoose connection error:', err));
+mongoose.connection.on('disconnected', () => console.warn('⚠️ Mongoose disconnected'));
+
+mongoose.connect(process.env.MONGO_URI, MONGO_OPTIONS)
+    .then(() => console.log('✅ MongoDB Initialized successfully'))
     .catch(err => console.error('❌ MongoDB Connection Error:', err));
 
 const PORT = process.env.PORT || 5000;

@@ -16,15 +16,38 @@ app.use(cors({
 }));
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI, { family: 4, serverSelectionTimeoutMS: 5000 }).then(async () => {
-  console.log(`Connected to database: ${mongoose.connection.name} on ${mongoose.connection.host}`);
-  const Flow = require('./models/Flow');
-  const Company = require('./models/Company');
-  const flows = await Flow.find({});
-  console.log(`Startup diagnostic: Total flows found: ${flows.length}`);
-  const companies = await Company.find({});
-  console.log(`Startup diagnostic: Total companies found: ${companies.length}`);
-});
+// Connection Options
+const MONGO_OPTIONS = {
+  family: 4,
+  serverSelectionTimeoutMS: 30000,
+  heartbeatFrequencyMS: 10000,
+  socketTimeoutMS: 45000,
+};
+
+// Connection Monitoring
+mongoose.connection.on('connected', () => console.log('✅ Mongoose connected to DB'));
+mongoose.connection.on('error', (err) => console.error('❌ Mongoose connection error:', err));
+mongoose.connection.on('disconnected', () => console.warn('⚠️ Mongoose disconnected'));
+mongoose.connection.on('reconnected', () => console.log('🔄 Mongoose reconnected'));
+
+mongoose.connect(process.env.MONGO_URI, MONGO_OPTIONS)
+  .then(async () => {
+    console.log(`🚀 Connected to database: ${mongoose.connection.name} on ${mongoose.connection.host}`);
+    const Flow = require('./models/Flow');
+    const Company = require('./models/Company');
+    try {
+      const flows = await Flow.find({});
+      console.log(`Startup diagnostic: Total flows found: ${flows.length}`);
+      const companies = await Company.find({});
+      console.log(`Startup diagnostic: Total companies found: ${companies.length}`);
+    } catch (err) {
+      console.error('Startup diagnostic failed:', err.message);
+    }
+  })
+  .catch(err => {
+    console.error('❌ MongoDB Initial Connection Error:', err);
+  });
+
 
 app.use('/api/conversations', require('./routes/conversation.routes'));
 app.use('/api/agents', require('./routes/agent.routes'));
