@@ -901,6 +901,8 @@ export default function ChatWidget({ apiKey: propKey }) {
           </div>
         )
       }
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
     </div >
   );
 }
+

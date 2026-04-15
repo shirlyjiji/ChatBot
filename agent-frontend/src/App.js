@@ -794,6 +794,7 @@ export default function App() {
           </div>
         </div>
       )}
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
     </div>
   );
 }
