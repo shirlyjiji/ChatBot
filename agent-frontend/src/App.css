@@ -697,15 +697,16 @@ body {
   position: absolute;
   inset: -100px;
   background:
-    radial-gradient(circle at 10% 10%, hsla(217, 91%, 60%, 1) 0px, transparent 50%),
-    radial-gradient(circle at 90% 10%, hsla(217, 91%, 50%, 1) 0px, transparent 50%),
-    radial-gradient(circle at 50% 90%, hsla(186, 100%, 40%, 1) 0px, transparent 50%),
-    radial-gradient(circle at 80% 80%, hsla(217, 91%, 40%, 1) 0px, transparent 50%);
+    radial-gradient(circle at 10% 10%, hsla(217, 91%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(circle at 90% 10%, hsla(217, 91%, 90%, 1) 0px, transparent 50%),
+    radial-gradient(circle at 50% 90%, hsla(186, 100%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(circle at 80% 80%, hsla(217, 91%, 92%, 1) 0px, transparent 50%);
   filter: blur(80px);
   animation: mesh-move 20s infinite alternate;
-  opacity: 0.4;
+  opacity: 1;
   z-index: 0;
 }
+
 
 
 @keyframes mesh-move {
