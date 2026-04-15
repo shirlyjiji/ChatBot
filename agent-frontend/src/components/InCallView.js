@@ -34,7 +34,7 @@ const InCallView = ({ callDuration, isMuted, toggleMute, agentCleanupCall, agent
                         onClick={toggleMute}
                         title={isMuted ? 'Unmute' : 'Mute'}
                     >
-                        {isMuted ? <MicOff size={24} /> : <Mic size={24} />}
+                        {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
                         <span>{isMuted ? 'Unmuted' : 'Mute'}</span>
                     </button>
 
@@ -43,7 +43,7 @@ const InCallView = ({ callDuration, isMuted, toggleMute, agentCleanupCall, agent
                         onClick={agentCleanupCall}
                         title="End Call"
                     >
-                        <PhoneOff size={24} />
+                        <PhoneOff size={20} />
                         <span>End Call</span>
                     </button>
                 </div>
