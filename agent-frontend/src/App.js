@@ -51,108 +51,145 @@ export default function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
 
-  useEffect(() => {
-    const interceptor = api.interceptors.response.use(
-      response => response,
-      error => {
-        if (error.response?.status === 401) {
-          localStorage.removeItem('agent_token');
-          localStorage.removeItem('agent_active_conversation');
-          setAgent(null);
-        }
-        return Promise.reject(error);
-      }
-    );
+  const setupSocketListeners = (socket, currentAgent) => {
+    console.log('Setting up socket listeners for agent:', currentAgent?.username);
 
+    socket.on('connect', () => {
+      console.log('✅ Socket connected');
+      restoreActiveChat();
+    });
+
+    socket.on('message', msg => {
+      console.log('📩 New message received:', msg);
+      setMessages(prev => [...prev, msg]);
+    });
+
+    socket.on('chatEnded', () => {
+      console.log('🚫 Chat ended');
+      setTimeout(() => {
+        localStorage.removeItem('agent_active_conversation');
+        setActive(null);
+        setMessages([]);
+      }, 8000);
+    });
+
+    socket.on('incomingAudioCall', ({ conversationId, companyId }) => {
+      console.log('📞 Incoming audio call request for convo:', conversationId, 'company:', companyId);
+      if (companyId && currentAgent?.companyId?.toString() !== companyId) {
+        console.log('❌ Company mismatch, ignoring call');
+        return;
+      }
+      setAudioCallRequest(conversationId);
+    });
+
+    socket.on('webrtc-offer', async ({ conversationId: cid, offer }) => {
+      console.log('📡 Received webrtc-offer for convo:', cid);
+      try {
+        console.log('🎤 Requesting microphone access...');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        console.log('✅ Microphone access granted');
+
+        localStreamRef.current = stream;
+        const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
+        peerRef.current = pc;
+
+        stream.getTracks().forEach(t => pc.addTrack(t, stream));
+        pc.ontrack = (e) => {
+          console.log('🔊 Remote track received');
+          if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0];
+        };
+
+        pc.onicecandidate = (e) => {
+          if (e.candidate) {
+            console.log('❄️ Sending ICE candidate');
+            socket.emit('webrtc-ice-candidate', { conversationId: cid, candidate: e.candidate });
+          }
+        };
+
+        console.log('⚙️ Setting remote description...');
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('⚙️ Creating answer...');
+        const answer = await pc.createAnswer();
+        console.log('⚙️ Setting local description...');
+        await pc.setLocalDescription(answer);
+
+        console.log('📤 Sending webrtc-answer');
+        socket.emit('webrtc-answer', { conversationId: cid, answer });
+
+        console.log('✨ Transitioning to in-call state');
+        setCallState('in-call');
+        setCallConversationId(cid);
+
+        if (callTimerRef.current) clearInterval(callTimerRef.current);
+        let sec = 0;
+        callTimerRef.current = setInterval(() => {
+          sec++;
+          setCallDuration(sec);
+        }, 1000);
+      } catch (err) {
+        console.error('❌ Agent failed to initialize WebRTC:', err);
+        socket.emit('endAudioCall', { conversationId: cid });
+        agentCleanupCall();
+        alert('Failed to access microphone. The call has been ended.');
+      }
+    });
+
+    socket.on('webrtc-ice-candidate', async ({ candidate }) => {
+      console.log('❄️ Received remote ICE candidate');
+      if (peerRef.current && candidate) {
+        try {
+          await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error('Error adding ICE candidate:', e);
+        }
+      }
+    });
+
+    socket.on('audioCallEnded', () => {
+      console.log('📵 Audio call ended by remote');
+      agentCleanupCall();
+    });
+
+    socket.on('connect_error', err => {
+      console.error('🔌 Socket connection error:', err.message);
+      if (
+        err.message.includes('Session replaced') ||
+        err.message.includes('Unauthorized') ||
+        err.message.includes('Missing token')
+      ) {
+        localStorage.removeItem('agent_token');
+        setAgent(null);
+      }
+    });
+  };
+
+  useEffect(() => {
     const token = localStorage.getItem('agent_token');
     if (!token) return;
 
     (async () => {
       try {
-        const res = await api.get('/api/agents/me'); // uses interceptor
+        const res = await api.get('/api/agents/me');
         const loadedAgent = res.data;
         setAgent(loadedAgent);
         setOnline(loadedAgent.online);
 
-        // reconnect socket after refresh
-        socketRef.current = io(`${SOCKET_URL}/agent`, {
+        if (socketRef.current) socketRef.current.disconnect();
+
+        const socket = io(`${SOCKET_URL}/agent`, {
           auth: { token }
         });
+        socketRef.current = socket;
+        setupSocketListeners(socket, loadedAgent);
 
-        socketRef.current.on('connect', () => {
-          restoreActiveChat(); // ✅ join room + reload messages
-        });
-        socketRef.current.on('message', msg => {
-          setMessages(prev => [...prev, msg]);
-        });
-
-        socketRef.current.on('chatEnded', () => {
-          setTimeout(() => {
-            localStorage.removeItem('agent_active_conversation');
-            setActive(null);
-            setMessages([]);
-          }, 8000);
-        });
-
-        socketRef.current.on('incomingAudioCall', ({ conversationId, companyId }) => {
-          // Only show notification to agents of the correct company
-          if (companyId && loadedAgent?.companyId?.toString() !== companyId) return;
-          setAudioCallRequest(conversationId);
-        });
-
-
-        // WebRTC signaling — receive offer from user, send answer
-        socketRef.current.on('webrtc-offer', async ({ conversationId: cid, offer }) => {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            localStreamRef.current = stream;
-            const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-            peerRef.current = pc;
-            stream.getTracks().forEach(t => pc.addTrack(t, stream));
-            pc.ontrack = (e) => { if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0]; };
-            pc.onicecandidate = (e) => {
-              if (e.candidate) socketRef.current.emit('webrtc-ice-candidate', { conversationId: cid, candidate: e.candidate });
-            };
-            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            socketRef.current.emit('webrtc-answer', { conversationId: cid, answer });
-            setCallState('in-call');
-            setCallConversationId(cid);
-            let sec = 0;
-            callTimerRef.current = setInterval(() => { sec++; setCallDuration(sec); }, 1000);
-          } catch (err) {
-            console.error('Agent failed to initialize WebRTC:', err);
-            socketRef.current.emit('endAudioCall', { conversationId: cid });
-            agentCleanupCall();
-            alert('Failed to access microphone. The call has been ended.');
-          }
-        });
-
-        socketRef.current.on('webrtc-ice-candidate', async ({ candidate }) => {
-          if (peerRef.current && candidate) await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        });
-
-        socketRef.current.on('audioCallEnded', () => { agentCleanupCall(); });
-
-        socketRef.current.on('connect_error', err => {
-          if (
-            err.message.includes('Session replaced') ||
-            err.message.includes('Unauthorized') ||
-            err.message.includes('Missing token')
-          ) {
-            localStorage.removeItem('agent_token');
-            setAgent(null);
-          }
-        });
       } catch (e) {
+        console.error('Auth check or socket init failed:', e);
         localStorage.removeItem('agent_token');
         setAgent(null);
       }
     })();
-
-    return () => api.interceptors.response.eject(interceptor);
   }, []);
+
 
 
   const restoreActiveChat = async () => {
@@ -184,75 +221,18 @@ export default function App() {
       localStorage.setItem('agent_token', res.data.token);
       setAgent(loggedInAgent);
       setOnline(loggedInAgent.online);
-      socketRef.current = io(`${SOCKET_URL}/agent`, {
-        auth: { token: localStorage.getItem('agent_token') }
+      const socket = io(`${SOCKET_URL}/agent`, {
+        auth: { token: res.data.token }
       });
+      socketRef.current = socket;
+      setupSocketListeners(socket, loggedInAgent);
 
-      socketRef.current.on('message', msg => {
-        setMessages(prev => [...prev, msg]);
-      });
-
-      socketRef.current.on('chatEnded', () => {
-        setTimeout(() => {
-          localStorage.removeItem('agent_active_conversation');
-          setActive(null);
-          setMessages([]);
-        }, 8000);
-      });
-
-      socketRef.current.on('incomingAudioCall', ({ conversationId, companyId }) => {
-        if (companyId && loggedInAgent?.companyId?.toString() !== companyId) return;
-        setAudioCallRequest(conversationId);
-      });
-
-      socketRef.current.on('webrtc-offer', async ({ conversationId: cid, offer }) => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          localStreamRef.current = stream;
-          const pc = new RTCPeerConnection({ iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] });
-          peerRef.current = pc;
-          stream.getTracks().forEach(t => pc.addTrack(t, stream));
-          pc.ontrack = (e) => { if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0]; };
-          pc.onicecandidate = (e) => {
-            if (e.candidate) socketRef.current.emit('webrtc-ice-candidate', { conversationId: cid, candidate: e.candidate });
-          };
-          await pc.setRemoteDescription(new RTCSessionDescription(offer));
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
-          socketRef.current.emit('webrtc-answer', { conversationId: cid, answer });
-          setCallState('in-call');
-          setCallConversationId(cid);
-          let sec = 0;
-          callTimerRef.current = setInterval(() => { sec++; setCallDuration(sec); }, 1000);
-        } catch (err) {
-          console.error('Agent failed to initialize WebRTC:', err);
-          socketRef.current.emit('endAudioCall', { conversationId: cid });
-          agentCleanupCall();
-          alert('Failed to access microphone. The call has been ended.');
-        }
-      });
-
-      socketRef.current.on('webrtc-ice-candidate', async ({ candidate }) => {
-        if (peerRef.current && candidate) await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-      });
-
-      socketRef.current.on('audioCallEnded', () => { agentCleanupCall(); });
-
-      socketRef.current.on('connect_error', err => {
-        if (
-          err.message.includes('Session replaced') ||
-          err.message.includes('Unauthorized')
-        ) {
-          alert('You have been logged out (another login detected)');
-          localStorage.removeItem('agent_token');
-          setAgent(null);
-        }
-      });
-
-    } catch {
+    } catch (err) {
+      console.error('Login failed:', err);
       alert('Invalid login');
     }
   };
+
 
 
   // ---------------- LOGOUT ----------------
