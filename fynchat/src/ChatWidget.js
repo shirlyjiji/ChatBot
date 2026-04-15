@@ -50,6 +50,9 @@ export default function ChatWidget({ apiKey: propKey }) {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const callTimerRef = useRef(null);
+  const [iceState, setIceState] = useState('new');
+  const [trackInfo, setTrackInfo] = useState('none');
+
 
 
   // ---------------- INIT SOCKET (ONCE) ----------------
@@ -502,20 +505,19 @@ export default function ChatWidget({ apiKey: propKey }) {
 
     pc.ontrack = (e) => {
       console.log('🔊 Remote track received:', e.track.kind);
+      setTrackInfo('Received: ' + e.track.kind);
       if (remoteAudioRef.current) {
-        if (e.streams && e.streams[0]) {
-          remoteAudioRef.current.srcObject = e.streams[0];
-        } else {
-          console.log('⚠️ No streams[0], creating new MediaStream from track');
-          remoteAudioRef.current.srcObject = new MediaStream([e.track]);
-        }
+        remoteAudioRef.current.srcObject = e.streams[0] || new MediaStream([e.track]);
+        remoteAudioRef.current.volume = 1.0;
         remoteAudioRef.current.play().catch(pErr => console.error('🔇 Play error:', pErr));
       }
     };
 
     pc.oniceconnectionstatechange = () => {
       console.log('❄️ ICE Connection State:', pc.iceConnectionState);
+      setIceState(pc.iceConnectionState);
     };
+
 
 
     return pc;
@@ -729,6 +731,12 @@ export default function ChatWidget({ apiKey: propKey }) {
 
       {/* Messages */}
       <div className="chat-messages">
+        {callState === 'in-call' && (
+          <div style={{ position: 'sticky', top: '10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '3px 10px', borderRadius: '15px', fontSize: '10px', zIndex: 10000, pointerEvents: 'none', textAlign: 'center', width: 'fit-content', margin: '0 auto' }}>
+            ICE: {iceState} | Track: {trackInfo}
+          </div>
+        )}
+
         {(() => {
           let lastDayKey = null;
 

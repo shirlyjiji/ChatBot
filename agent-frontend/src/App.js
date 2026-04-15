@@ -53,6 +53,8 @@ export default function App() {
   const [callConversationId, setCallConversationId] = useState(null);
   const [callEnded, setCallEnded] = useState(false);
   const [lastCallDuration, setLastCallDuration] = useState(0);
+  const [iceState, setIceState] = useState('new');
+  const [trackInfo, setTrackInfo] = useState('none');
 
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -123,20 +125,19 @@ export default function App() {
         stream.getTracks().forEach(t => pc.addTrack(t, stream));
         pc.ontrack = (e) => {
           console.log('🔊 Remote track received:', e.track.kind);
+          setTrackInfo('Received: ' + e.track.kind);
           if (remoteAudioRef.current) {
-            if (e.streams && e.streams[0]) {
-              remoteAudioRef.current.srcObject = e.streams[0];
-            } else {
-              console.log('⚠️ No streams[0], creating new MediaStream from track');
-              remoteAudioRef.current.srcObject = new MediaStream([e.track]);
-            }
+            remoteAudioRef.current.srcObject = e.streams[0] || new MediaStream([e.track]);
+            remoteAudioRef.current.volume = 1.0;
             remoteAudioRef.current.play().catch(pErr => console.error('🔇 Play error:', pErr));
           }
         };
 
         pc.oniceconnectionstatechange = () => {
           console.log('❄️ ICE Connection State:', pc.iceConnectionState);
+          setIceState(pc.iceConnectionState);
         };
+
 
 
         pc.onicecandidate = (e) => {
@@ -643,6 +644,12 @@ export default function App() {
             </button>
           </div>
         </header>
+
+        {callState === 'in-call' && (
+          <div style={{ position: 'fixed', top: '10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: '12px', zIndex: 10000 }}>
+            ICE: {iceState} | Track: {trackInfo}
+          </div>
+        )}
 
         {!active && callState !== 'in-call' && !callEnded && (
           <div className="empty">
