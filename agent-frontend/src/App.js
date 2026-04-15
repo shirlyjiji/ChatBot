@@ -131,9 +131,22 @@ export default function App() {
 
         stream.getTracks().forEach(t => pc.addTrack(t, stream));
         pc.ontrack = (e) => {
-          console.log('🔊 Remote track received');
-          if (remoteAudioRef.current) remoteAudioRef.current.srcObject = e.streams[0];
+          console.log('🔊 Remote track received:', e.track.kind);
+          if (remoteAudioRef.current) {
+            if (e.streams && e.streams[0]) {
+              remoteAudioRef.current.srcObject = e.streams[0];
+            } else {
+              console.log('⚠️ No streams[0], creating new MediaStream from track');
+              remoteAudioRef.current.srcObject = new MediaStream([e.track]);
+            }
+            remoteAudioRef.current.play().catch(pErr => console.error('🔇 Play error:', pErr));
+          }
         };
+
+        pc.oniceconnectionstatechange = () => {
+          console.log('❄️ ICE Connection State:', pc.iceConnectionState);
+        };
+
 
         pc.onicecandidate = (e) => {
           if (e.candidate) {

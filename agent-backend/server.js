@@ -143,9 +143,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('webrtc-ice-candidate', ({ conversationId, candidate }) => {
-    console.log(`[Signaling] Forwarding ICE candidate from User to Agent for convo: ${conversationId}`);
-    agentIO.to(conversationId).emit('webrtc-ice-candidate', { conversationId, candidate });
+    const agentSocketId = callAgentMap.get(conversationId);
+    console.log(`[Signaling] Forwarding ICE candidate (User→Agent) ConvoID: ${conversationId}, AgentSocketId: ${agentSocketId}`);
+    if (agentSocketId) {
+      agentIO.to(agentSocketId).emit('webrtc-ice-candidate', { conversationId, candidate });
+    } else {
+      agentIO.to(conversationId).emit('webrtc-ice-candidate', { conversationId, candidate });
+    }
   });
+
 
 
   socket.on('endAudioCall', ({ conversationId }) => {
