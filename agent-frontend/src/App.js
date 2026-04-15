@@ -624,7 +624,7 @@ export default function App() {
             isMuted={isMuted}
             toggleMute={agentToggleMute}
             agentCleanupCall={agentHangUp}
-            agentName={currentAgent?.username}
+            agentName={agent?.username}
           />
         )}
 
