@@ -172,7 +172,8 @@ agentIO.use(async (socket, next) => {
 });
 
 agentIO.on('connection', (socket) => {
-  console.log('Agent socket connected:', socket.agent.username);
+  console.log(`[Agent] New connection: ${socket.agent.username} (${socket.id}) for company: ${socket.agent.companyId}`);
+
 
   socket.on('joinConversation', (conversationId) => {
     if (!conversationId) return;

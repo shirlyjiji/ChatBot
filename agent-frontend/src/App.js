@@ -54,7 +54,12 @@ export default function App() {
   const setupSocketListeners = (socket, currentAgent) => {
     console.log('Setting up socket listeners for agent:', currentAgent?.username);
 
+    socket.onAny((event, ...args) => {
+      console.log(`🔹 Socket Event: ${event}`, args);
+    });
+
     socket.on('connect', () => {
+
       console.log('✅ Socket connected');
       restoreActiveChat();
     });
