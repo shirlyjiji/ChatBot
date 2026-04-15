@@ -3,6 +3,8 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import './App.css';
 import { getMsgTs, formatTime, formatDayLabel } from './utils/chatTime';
+import InCallView from './components/InCallView';
+
 const API = process.env.REACT_APP_API_BASE_URL;
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
 
@@ -617,38 +619,13 @@ export default function App() {
         )}
 
         {!active && callState === 'in-call' && (
-          <div className="empty" style={{ background: '#f8fafc' }}>
-            <div style={{
-              width: 120, height: 120, borderRadius: '50%', background: '#4ade80',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 0 0 20px rgba(74, 222, 128, 0.2)',
-              animation: 'pulse 2s infinite', marginBottom: 32
-            }}>
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="white">
-                <path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" />
-              </svg>
-            </div>
-            <h2 style={{ fontSize: '32px', color: '#1e293b', marginBottom: 8 }}>Live Audio Call</h2>
-            <p style={{ fontSize: '20px', color: '#64748b', marginBottom: 32, fontWeight: 500 }}>
-              Duration: {formatDuration(callDuration)}
-            </p>
-            <div style={{ display: 'flex', gap: 16 }}>
-              <button onClick={agentToggleMute} style={{
-                background: isMuted ? '#cbd5e1' : '#e2e8f0', color: '#334155', border: 'none',
-                borderRadius: '30px', padding: '12px 24px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 8
-              }}>
-                {isMuted ? '🔇 Unmute' : '🎙️ Mute'}
-              </button>
-              <button onClick={agentHangUp} style={{
-                background: '#ef4444', color: 'white', border: 'none',
-                borderRadius: '30px', padding: '12px 24px', fontSize: '16px', fontWeight: 600, cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 8
-              }}>
-                📵 End Call
-              </button>
-            </div>
-          </div>
+          <InCallView
+            callDuration={callDuration}
+            isMuted={isMuted}
+            toggleMute={agentToggleMute}
+            agentCleanupCall={agentHangUp}
+            agentName={currentAgent?.username}
+          />
         )}
 
         {active && (
