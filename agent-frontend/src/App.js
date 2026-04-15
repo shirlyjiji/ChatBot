@@ -642,7 +642,7 @@ export default function App() {
           </div>
         )}
 
-        {!active && callState === 'in-call' && (
+        {callState === 'in-call' && (
           <InCallView
             callDuration={callDuration}
             isMuted={isMuted}
