@@ -396,7 +396,7 @@ export default function App() {
       console.log('📤 Sending acceptAudioCall for convo:', audioCallRequest);
       socketRef.current.emit('acceptAudioCall', { conversationId: audioCallRequest });
       setAudioCallRequest(null);
-    }, 100);
+    }, 500);
   };
 
 

@@ -60,6 +60,9 @@ const io = new Server(server, { cors: { origin: process.env.SOCKET_CORS_ORIGIN }
 app.set('io', io);
 
 // ================= SOCKET SETUP =================
+// Track which agent socket is handling each call: conversationId -> agentSocketId
+const callAgentMap = new Map();
+
 
 // ---- USER SOCKET (NO JWT) ----
 io.on('connection', (socket) => {
@@ -128,8 +131,15 @@ io.on('connection', (socket) => {
 
   // WebRTC signaling — user → agent
   socket.on('webrtc-offer', ({ conversationId, offer }) => {
-    console.log(`[Signaling] Forwarding webrtc-offer from User to Agent for convo: ${conversationId}`);
-    agentIO.to(conversationId).emit('webrtc-offer', { conversationId, offer });
+    const agentSocketId = callAgentMap.get(conversationId);
+    console.log(`[Signaling] Forwarding webrtc-offer to agent. ConvoID: ${conversationId}, AgentSocketId: ${agentSocketId}`);
+    if (agentSocketId) {
+      // Direct emission to the specific accepting agent socket
+      agentIO.to(agentSocketId).emit('webrtc-offer', { conversationId, offer });
+    } else {
+      // Fallback: broadcast to room
+      agentIO.to(conversationId).emit('webrtc-offer', { conversationId, offer });
+    }
   });
 
   socket.on('webrtc-ice-candidate', ({ conversationId, candidate }) => {
@@ -141,6 +151,8 @@ io.on('connection', (socket) => {
   socket.on('endAudioCall', ({ conversationId }) => {
     agentIO.to(conversationId).emit('audioCallEnded', { conversationId });
     io.to(conversationId).emit('audioCallEnded', { conversationId });
+    // Clean up agent tracking
+    callAgentMap.delete(conversationId);
   });
 });
 
@@ -206,6 +218,9 @@ agentIO.on('connection', (socket) => {
 
   socket.on('acceptAudioCall', ({ conversationId }) => {
     console.log(`[Agent] ${socket.agent.username} accepting audio call in convo:`, conversationId);
+    // Track this agent's socket ID so user's webrtc-offer can be forwarded directly
+    callAgentMap.set(conversationId, socket.id);
+    console.log(`[Agent] Mapped convo ${conversationId} → agent socket ${socket.id}`);
     io.to(conversationId).emit('audioCallAccepted', { conversationId });
   });
 
