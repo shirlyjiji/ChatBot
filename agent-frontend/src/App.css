@@ -811,18 +811,61 @@ body {
 
 /* ================= IN-CALL VIEW (PREMIUM) ================= */
 
-.incall-container {
-  flex: 1;
+/* Audio Visualizer */
+.audio-visualizer {
   display: flex;
   align-items: center;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  background: #ffffff;
-  width: 100%;
+  gap: 3px;
+  height: 20px;
+  margin-bottom: 24px;
+}
+
+.audio-visualizer .bar {
+  width: 3px;
   height: 100%;
-  margin: 0;
-  padding: 0;
+  background: #6366f1;
+  border-radius: 10px;
+  animation: barGrow 1s ease-in-out infinite;
+}
+
+.audio-visualizer .bar:nth-child(2) {
+  animation-delay: 0.1s;
+  height: 70%;
+}
+
+.audio-visualizer .bar:nth-child(3) {
+  animation-delay: 0.2s;
+  height: 90%;
+}
+
+.audio-visualizer .bar:nth-child(4) {
+  animation-delay: 0.3s;
+  height: 60%;
+}
+
+.audio-visualizer .bar:nth-child(5) {
+  animation-delay: 0.4s;
+  height: 80%;
+}
+
+@keyframes barGrow {
+
+  0%,
+  100% {
+    transform: scaleY(0.5);
+  }
+
+  50% {
+    transform: scaleY(1.5);
+  }
+}
+
+.incall-container audio {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
 }
 
 

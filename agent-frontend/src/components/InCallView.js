@@ -23,6 +23,16 @@ const InCallView = ({ callDuration, isMuted, toggleMute, agentCleanupCall, agent
                     </div>
                 </div>
 
+                {/* Simple Audio Visualizer bars */}
+                <div className="audio-visualizer">
+                    <div className="bar"></div>
+                    <div className="bar"></div>
+                    <div className="bar"></div>
+                    <div className="bar"></div>
+                    <div className="bar"></div>
+                </div>
+
+
                 <div className="timer-section">
                     <h2 className="call-timer">{formatDuration(callDuration)}</h2>
                     <p className="call-participant">Customer Conversation</p>
