@@ -128,12 +128,15 @@ io.on('connection', (socket) => {
 
   // WebRTC signaling — user → agent
   socket.on('webrtc-offer', ({ conversationId, offer }) => {
+    console.log(`[Signaling] Forwarding webrtc-offer from User to Agent for convo: ${conversationId}`);
     agentIO.to(conversationId).emit('webrtc-offer', { conversationId, offer });
   });
 
   socket.on('webrtc-ice-candidate', ({ conversationId, candidate }) => {
+    console.log(`[Signaling] Forwarding ICE candidate from User to Agent for convo: ${conversationId}`);
     agentIO.to(conversationId).emit('webrtc-ice-candidate', { conversationId, candidate });
   });
+
 
   socket.on('endAudioCall', ({ conversationId }) => {
     agentIO.to(conversationId).emit('audioCallEnded', { conversationId });
@@ -174,7 +177,9 @@ agentIO.on('connection', (socket) => {
   socket.on('joinConversation', (conversationId) => {
     if (!conversationId) return;
     socket.join(conversationId);
+    console.log(`[Agent] ${socket.agent.username} joined room: ${conversationId}`);
   });
+
 
   socket.on('agentMessage', async ({ conversationId, text }) => {
     try {
@@ -199,9 +204,10 @@ agentIO.on('connection', (socket) => {
   });
 
   socket.on('acceptAudioCall', ({ conversationId }) => {
-    console.log('Agent accepting audio call in convo:', conversationId);
+    console.log(`[Agent] ${socket.agent.username} accepting audio call in convo:`, conversationId);
     io.to(conversationId).emit('audioCallAccepted', { conversationId });
   });
+
 
   socket.on('rejectAudioCall', ({ conversationId }) => {
     console.log('Agent rejecting audio call in convo:', conversationId);
@@ -210,12 +216,15 @@ agentIO.on('connection', (socket) => {
 
   // WebRTC signaling — agent → user
   socket.on('webrtc-answer', ({ conversationId, answer }) => {
+    console.log(`[Signaling] Forwarding webrtc-answer from Agent to User for convo: ${conversationId}`);
     io.to(conversationId).emit('webrtc-answer', { conversationId, answer });
   });
 
   socket.on('webrtc-ice-candidate', ({ conversationId, candidate }) => {
+    console.log(`[Signaling] Forwarding ICE candidate from Agent to User for convo: ${conversationId}`);
     io.to(conversationId).emit('webrtc-ice-candidate', { conversationId, candidate });
   });
+
 
   socket.on('endAudioCall', ({ conversationId }) => {
     io.to(conversationId).emit('audioCallEnded', { conversationId });

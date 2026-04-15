@@ -356,11 +356,18 @@ export default function App() {
 
   const acceptAudioCall = () => {
     if (!audioCallRequest) return;
+    console.log('🖱️ Accept clicked for convo:', audioCallRequest);
     // Join the conversation room so WebRTC signaling events are routed correctly
     socketRef.current.emit('joinConversation', audioCallRequest);
-    socketRef.current.emit('acceptAudioCall', { conversationId: audioCallRequest });
-    setAudioCallRequest(null);
+
+    // Give a tiny delay to ensure socket.join is processed on server
+    setTimeout(() => {
+      console.log('📤 Sending acceptAudioCall for convo:', audioCallRequest);
+      socketRef.current.emit('acceptAudioCall', { conversationId: audioCallRequest });
+      setAudioCallRequest(null);
+    }, 100);
   };
+
 
   const rejectAudioCall = () => {
     if (!audioCallRequest) return;
