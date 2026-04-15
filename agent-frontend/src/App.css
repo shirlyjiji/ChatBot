@@ -681,7 +681,136 @@ body {
   transform: translateY(0);
 }
 
+/* ================= CALL ENDED VIEW ================= */
+.call-ended-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+  width: 100%;
+  height: 100%;
+}
+
+.call-ended-bg {
+  position: absolute;
+  inset: -100px;
+  background:
+    radial-gradient(circle at 20% 20%, hsla(142, 70%, 94%, 1) 0px, transparent 50%),
+    radial-gradient(circle at 80% 80%, hsla(217, 91%, 95%, 1) 0px, transparent 50%);
+  filter: blur(60px);
+  z-index: 0;
+}
+
+.call-ended-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  padding: 40px;
+}
+
+.call-ended-icon-wrap {
+  margin-bottom: 8px;
+}
+
+.call-ended-icon {
+  width: 80px;
+  height: 80px;
+  background: #000;
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.call-ended-title {
+  font-size: 28px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.03em;
+}
+
+.call-ended-subtitle {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.call-ended-stats {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 20px 32px;
+  border-radius: 20px;
+  margin-top: 8px;
+}
+
+.call-stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.call-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #94a3b8;
+}
+
+.call-stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.call-stat-success {
+  color: #16a34a;
+  font-size: 15px;
+}
+
+.call-stat-divider {
+  width: 1px;
+  height: 40px;
+  background: #e2e8f0;
+}
+
+.call-ended-btn {
+  margin-top: 12px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 100px;
+  padding: 14px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.03em;
+}
+
+.call-ended-btn:hover {
+  background: #1e293b;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
 /* ================= IN-CALL VIEW (PREMIUM) ================= */
+
 .incall-container {
   flex: 1;
   display: flex;

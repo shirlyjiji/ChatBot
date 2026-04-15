@@ -4,6 +4,8 @@ import { io } from 'socket.io-client';
 import './App.css';
 import { getMsgTs, formatTime, formatDayLabel } from './utils/chatTime';
 import InCallView from './components/InCallView';
+import CallEndedView from './components/CallEndedView';
+
 
 const API = process.env.REACT_APP_API_BASE_URL;
 const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
@@ -49,6 +51,9 @@ export default function App() {
   const [isMuted, setIsMuted] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [callConversationId, setCallConversationId] = useState(null);
+  const [callEnded, setCallEnded] = useState(false);
+  const [lastCallDuration, setLastCallDuration] = useState(0);
+
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -359,17 +364,22 @@ export default function App() {
   // ---------------- AUDIO CALL signaling ----------------
   // ---------------- AUDIO CALL signaling ----------------
   const agentCleanupCall = () => {
+    const durationSnapshot = callDuration;
     peerRef.current?.close();
     peerRef.current = null;
     localStreamRef.current?.getTracks().forEach(t => t.stop());
     localStreamRef.current = null;
     clearInterval(callTimerRef.current);
     callTimerRef.current = null;
+    setLastCallDuration(durationSnapshot);
+    setCallEnded(true);
     setCallState('idle');
     setCallDuration(0);
     setIsMuted(false);
     setCallConversationId(null);
   };
+
+
 
   const agentHangUp = () => {
     socketRef.current.emit('endAudioCall', { conversationId: callConversationId });
@@ -630,7 +640,7 @@ export default function App() {
           </div>
         </header>
 
-        {!active && callState !== 'in-call' && (
+        {!active && callState !== 'in-call' && !callEnded && (
           <div className="empty">
             <div className="empty-icon">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -641,6 +651,15 @@ export default function App() {
             <p>Select a waiting chat or view history to get started.</p>
           </div>
         )}
+
+        {callEnded && (
+          <CallEndedView
+            callDuration={lastCallDuration}
+            agentName={agent?.username}
+            onDismiss={() => setCallEnded(false)}
+          />
+        )}
+
 
         {callState === 'in-call' && (
           <InCallView
