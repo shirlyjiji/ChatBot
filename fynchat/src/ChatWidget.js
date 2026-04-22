@@ -22,6 +22,7 @@ export default function ChatWidget({ apiKey: propKey }) {
   const peerRef = useRef(null);       // RTCPeerConnection
   const localStreamRef = useRef(null); // local microphone stream
   const remoteAudioRef = useRef(null); // remote audio element
+  const pendingCandidates = useRef([]); // Buffer for candidates arriving before setRemoteDescription
 
 
   const [conversationId, setConversationId] = useState(null);
@@ -81,13 +82,36 @@ export default function ChatWidget({ apiKey: propKey }) {
 
     socketRef.current.on('webrtc-answer', async ({ answer }) => {
       if (peerRef.current) {
+        console.log('⚙️ Received webrtc-answer. Setting remote description...');
         await peerRef.current.setRemoteDescription(new RTCSessionDescription(answer));
+        console.log('✅ Remote description set. Processing buffered candidates:', pendingCandidates.current.length);
+        while (pendingCandidates.current.length > 0) {
+          const cand = pendingCandidates.current.shift();
+          try {
+            await peerRef.current.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.error('Error adding buffered candidate:', e);
+          }
+        }
       }
     });
 
     socketRef.current.on('webrtc-ice-candidate', async ({ candidate }) => {
-      if (peerRef.current && candidate) {
-        await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+      console.log('❄️ Received remote ICE candidate');
+      if (peerRef.current) {
+        if (peerRef.current.remoteDescription && peerRef.current.remoteDescription.type) {
+          try {
+            await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error('Error adding ICE candidate:', e);
+          }
+        } else {
+          console.log('⌛ Buffering candidate (remoteDescription not set)');
+          pendingCandidates.current.push(candidate);
+        }
+      } else {
+        console.log('⌛ Buffering candidate (peerRef not set)');
+        pendingCandidates.current.push(candidate);
       }
     });
 
@@ -481,12 +505,19 @@ export default function ChatWidget({ apiKey: propKey }) {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun.metered.ca:80' },
         {
-          urls: [
-            'turn:openrelay.metered.ca:80',
-            'turn:openrelay.metered.ca:443',
-            'turn:openrelay.metered.ca:443?transport=tcp'
-          ],
+          urls: 'turn:openrelay.metered.ca:80',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443',
+          username: 'openrelayproject',
+          credential: 'openrelayproject'
+        },
+        {
+          urls: 'turn:openrelay.metered.ca:443?transport=tcp',
           username: 'openrelayproject',
           credential: 'openrelayproject'
         }

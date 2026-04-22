@@ -27,6 +27,7 @@ export default function App() {
   const localStreamRef = useRef(null);
   const remoteAudioRef = useRef(null);
   const callTimerRef = useRef(null);
+  const pendingCandidates = useRef([]); // Buffer for candidates arriving before setRemoteDescription
 
   // ---------------- AUTH ----------------
   const [agent, setAgent] = useState(null);
@@ -108,12 +109,19 @@ export default function App() {
           iceServers: [
             { urls: 'stun:stun.l.google.com:19302' },
             { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun.metered.ca:80' },
             {
-              urls: [
-                'turn:openrelay.metered.ca:80',
-                'turn:openrelay.metered.ca:443',
-                'turn:openrelay.metered.ca:443?transport=tcp'
-              ],
+              urls: 'turn:openrelay.metered.ca:80',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443',
+              username: 'openrelayproject',
+              credential: 'openrelayproject'
+            },
+            {
+              urls: 'turn:openrelay.metered.ca:443?transport=tcp',
               username: 'openrelayproject',
               credential: 'openrelayproject'
             }
@@ -136,19 +144,43 @@ export default function App() {
         pc.oniceconnectionstatechange = () => {
           console.log('❄️ ICE Connection State:', pc.iceConnectionState);
           setIceState(pc.iceConnectionState);
+          if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+            console.log('✅ WebRTC established successfully');
+          }
         };
 
-
+        const onIceCandidateReceived = async (candidate) => {
+          if (pc.remoteDescription && pc.remoteDescription.type) {
+            try {
+              await pc.addIceCandidate(new RTCIceCandidate(candidate));
+            } catch (e) {
+              console.error('Error adding ICE candidate:', e);
+            }
+          } else {
+            pendingCandidates.current.push(candidate);
+          }
+        };
 
         pc.onicecandidate = (e) => {
           if (e.candidate) {
-            console.log('❄️ Sending ICE candidate');
+            console.log('❄️ Sending local ICE candidate');
             socket.emit('webrtc-ice-candidate', { conversationId: cid, candidate: e.candidate });
           }
         };
 
         console.log('⚙️ Setting remote description...');
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('✅ Remote description set. Processing buffered candidates:', pendingCandidates.current.length);
+
+        while (pendingCandidates.current.length > 0) {
+          const cand = pendingCandidates.current.shift();
+          try {
+            await pc.addIceCandidate(new RTCIceCandidate(cand));
+          } catch (e) {
+            console.error('Error adding buffered candidate:', e);
+          }
+        }
+
         console.log('⚙️ Creating answer...');
         const answer = await pc.createAnswer();
         console.log('⚙️ Setting local description...');
@@ -177,12 +209,20 @@ export default function App() {
 
     socket.on('webrtc-ice-candidate', async ({ candidate }) => {
       console.log('❄️ Received remote ICE candidate');
-      if (peerRef.current && candidate) {
-        try {
-          await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
-        } catch (e) {
-          console.error('Error adding ICE candidate:', e);
+      if (peerRef.current) {
+        if (peerRef.current.remoteDescription && peerRef.current.remoteDescription.type) {
+          try {
+            await peerRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+          } catch (e) {
+            console.error('Error adding ICE candidate:', e);
+          }
+        } else {
+          console.log('⌛ Buffering candidate (remoteDescription not set)');
+          pendingCandidates.current.push(candidate);
         }
+      } else {
+        console.log('⌛ Buffering candidate (peerRef not set)');
+        pendingCandidates.current.push(candidate);
       }
     });
 
@@ -502,36 +542,19 @@ export default function App() {
       <div className={`sidebar-overlay ${isSidebarOpen ? 'active' : ''}`} onClick={() => setIsSidebarOpen(false)} />
 
       {/* Remote audio for WebRTC */}
-      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+      <audio
+        ref={remoteAudioRef}
+        autoPlay
+        playsInline
+        style={{
+          opacity: 0,
+          position: 'absolute',
+          pointerEvents: 'none',
+          width: 0,
+          height: 0
+        }}
+      />
 
-      {/* In-call floating bar */}
-      {callState === 'in-call' && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-          background: 'linear-gradient(90deg, #1d4ed8, #2563eb)',
-          color: 'white', padding: '10px 24px',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#4ade80', animation: 'pulse 1.5s infinite' }} />
-            <span style={{ fontWeight: 700, fontSize: '14px' }}>🎙️ Live Audio Call · {formatDuration(callDuration)}</span>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={agentToggleMute} style={{
-              background: isMuted ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.15)',
-              border: 'none', borderRadius: '20px', padding: '6px 14px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 600
-            }}>
-              {isMuted ? '🔇 Unmute' : '🎙️ Mute'}
-            </button>
-            <button onClick={agentHangUp} style={{
-              background: '#ef4444', border: 'none', borderRadius: '20px',
-              padding: '6px 14px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 700
-            }}>
-              📵 End Call
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* SIDEBAR */}
       <aside className={`sidebar ${isSidebarOpen ? 'mobile-open' : ''}`}>
@@ -646,10 +669,44 @@ export default function App() {
         </header>
 
         {callState === 'in-call' && (
-          <div style={{ position: 'fixed', top: '10px', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.7)', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: '12px', zIndex: 10000 }}>
-            ICE: {iceState} | Track: {trackInfo}
+          <div style={{
+            position: 'absolute', top: '0', left: '58%', transform: 'translateX(-50%)',
+            width: 'auto', minWidth: '400px', zIndex: 9999,
+            background: 'rgba(255, 255, 255, 0.7)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.4)',
+            borderRadius: '40px',
+            color: '#0f172a', padding: '12px 24px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: '24px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)',
+            animation: 'top-bar-slide 0.5s ease-out'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="status-dot-pulse" style={{ width: 10, height: 10 }} />
+              <span style={{ fontWeight: 800, fontSize: '14px', letterSpacing: '0.5px' }}>LIVE AUDIO CALL · {formatDuration(callDuration)}</span>
+            </div>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={agentToggleMute} style={{
+                background: isMuted ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+                border: '1px solid rgba(99, 102, 241, 0.2)', borderRadius: '24px', padding: '8px 16px',
+                color: isMuted ? '#ef4444' : '#6366f1', cursor: 'pointer', fontSize: '13px', fontWeight: 800,
+                transition: 'all 0.3s ease'
+              }}>
+                {isMuted ? '🔇 Unmute' : '🎙️ Mute'}
+              </button>
+              <button onClick={agentHangUp} style={{
+                background: '#ef4444', border: 'none', borderRadius: '24px',
+                padding: '8px 16px', color: 'white', cursor: 'pointer', fontSize: '13px', fontWeight: 800,
+                boxShadow: '0 10px 15px rgba(239, 68, 68, 0.2)',
+                transition: 'all 0.3s ease'
+              }}>
+                📵 End Call
+              </button>
+            </div>
           </div>
         )}
+
 
         {!active && callState !== 'in-call' && !callEnded && (
           <div className="empty">
@@ -792,8 +849,6 @@ export default function App() {
           </div>
         </div>
       )}
-      <audio ref={remoteAudioRef} autoPlay playsInline style={{ opacity: 0, position: 'absolute', pointerEvents: 'none' }} />
-
     </div>
   );
 }
