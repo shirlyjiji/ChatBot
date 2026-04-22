@@ -16,6 +16,10 @@ app.use(cors({
 }));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', message: 'Agent Backend is running' });
+});
+
 // Connection Options
 const MONGO_OPTIONS = {
   family: 4,
