@@ -11,9 +11,21 @@ const Agent = require('./models/Agent');
 
 const app = express();
 
-app.use(cors({
-  origin: process.env.CORS_ORIGIN
-}));
+// Support comma-separated origins in CORS_ORIGIN env var, e.g.:
+// https://chatbot-agent-frontend-0c2c.onrender.com,https://chatbot-fynchat.onrender.com
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
+  : '*';
+
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // handle pre-flight for all routes
 app.use(express.json());
 
 app.get('/', (req, res) => {
@@ -60,7 +72,17 @@ app.use('/api/appointments', require('./routes/appointment.routes'));
 
 
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: process.env.SOCKET_CORS_ORIGIN } });
+const socketOrigins = process.env.SOCKET_CORS_ORIGIN
+  ? process.env.SOCKET_CORS_ORIGIN.split(',').map(o => o.trim())
+  : allowedOrigins;
+
+const io = new Server(server, {
+  cors: {
+    origin: socketOrigins,
+    methods: ['GET', 'POST'],
+    credentials: true,
+  }
+});
 app.set('io', io);
 
 // ================= SOCKET SETUP =================
