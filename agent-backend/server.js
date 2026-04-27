@@ -12,7 +12,7 @@ const Agent = require('./models/Agent');
 const app = express();
 
 app.use(cors({ origin: '*' }));
-app.options('*', cors({ origin: '*' }));
+app.options('/*', cors({ origin: '*' }));
 app.use(express.json());
 
 app.get('/', (req, res) => {
